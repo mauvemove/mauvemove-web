@@ -5,5 +5,8 @@
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "."
-  }
+  },
+  "routes": [
+    { "pattern": "nongolbus.mauvemove.com", "custom_domain": true }
+  ]
 }
