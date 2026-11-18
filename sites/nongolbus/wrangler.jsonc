@@ -3,12 +3,12 @@
 {
   "name": "nongolbus",
   "compatibility_date": "2026-11-01",
-  // 브랜치별 미리보기 주소(*-nongolbus.<계정>.workers.dev)를 켠다.
-  "preview_urls": true,
   "assets": {
     "directory": "."
   },
   "routes": [
     { "pattern": "nongolbus.mauvemove.com", "custom_domain": true }
-  ]
+  ],
+  // 프로덕션 분기가 아닌 브랜치는 `npx wrangler preview` 로 빌드되며, 이 블록이 있어야 한다.
+  "previews": {}
 }
