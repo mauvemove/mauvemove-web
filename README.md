@@ -7,7 +7,6 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 | 경로 | 내용 | 주소 | 호스팅 |
 |---|---|---|---|
 | `sites/nongolbus/` | 논골버스 소개 페이지, 개인정보처리방침, app-ads.txt | https://nongolbus.mauvemove.com | Cloudflare Pages |
-| `sites/lottosmash/` | 로또스매시 소개 페이지 (미이전, 현재 ethan509 계정 repo의 GitHub Pages) | https://www.lottosmash.mauvemove.com | Cloudflare Pages 예정 |
 | `sites/opencall/` | 오픈콜 웹 (미구현) | https://opencall.mauvemove.com | Cloudflare Pages 예정 |
 | `admin/` | 3개 서비스 통합 백오피스 (미구현) | https://admin.mauvemove.com | Cloud Run + IAP |
 | `shared/` | 공통 스타일·컴포넌트·개인정보처리방침 공통 문단 | - | - |
@@ -19,7 +18,7 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 - `admin.mauvemove.com`: 백오피스
 - 예외
   - `api.nongolbus.mauvemove.com`: 출시된 앱이 사용 중. Firebase Hosting → Cloud Run.
-  - `lottosmash.mauvemove.com`(API), `www.lottosmash.mauvemove.com`(페이지): 출시된 앱과 스토어 등록 주소라 당분간 유지.
+  - 로또스매시는 개인 프로젝트라 이 repo에 넣지 않는다. 페이지(`www.lottosmash.mauvemove.com`)는 개인 계정 repo의 GitHub Pages, API(`lottosmash.mauvemove.com`)는 GCP VM에서 그대로 운영한다.
 
 ## 배포
 
@@ -28,7 +27,6 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 | 프로젝트 | 루트 디렉터리 | 빌드 명령 | 빌드 감시 경로 |
 |---|---|---|---|
 | nongolbus | `sites/nongolbus` | 없음 | `sites/nongolbus/*` |
-| lottosmash | `sites/lottosmash` | 없음 | `sites/lottosmash/*` |
 | opencall | `sites/opencall` | 없음 | `sites/opencall/*` |
 
 ## 규칙
