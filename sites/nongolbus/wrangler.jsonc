@@ -8,5 +8,7 @@
   },
   "routes": [
     { "pattern": "nongolbus.mauvemove.com", "custom_domain": true }
-  ]
+  ],
+  // 프로덕션 분기가 아닌 브랜치는 `npx wrangler preview` 로 빌드되며, 이 블록이 있어야 한다.
+  "previews": {}
 }

@@ -1,0 +1,11 @@
+// 미리보기 빌드(프로덕션 분기가 아닌 브랜치)용 설정.
+// Cloudflare 미리보기 빌드는 repo 루트에서 `npx wrangler preview` 로 실행되므로 여기에 둔다.
+// 운영 배포는 sites/nongolbus/wrangler.jsonc 를 쓴다.
+{
+  "name": "nongolbus",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./sites/nongolbus"
+  },
+  "previews": {}
+}
