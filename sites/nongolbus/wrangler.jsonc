@@ -3,6 +3,8 @@
 {
   "name": "nongolbus",
   "compatibility_date": "2026-11-01",
+  // 브랜치별 미리보기 주소(*-nongolbus.<계정>.workers.dev)를 켠다.
+  "preview_urls": true,
   "assets": {
     "directory": "."
   },
