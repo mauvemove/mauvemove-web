@@ -1,0 +1,9 @@
+// Cloudflare Workers 정적 자산 배포 설정 (nongolbus.mauvemove.com)
+// name 은 Cloudflare 대시보드의 Worker 이름과 같아야 한다.
+{
+  "name": "nongolbus",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "."
+  }
+}

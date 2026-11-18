@@ -6,8 +6,8 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 
 | 경로 | 내용 | 주소 | 호스팅 |
 |---|---|---|---|
-| `sites/nongolbus/` | 논골버스 소개 페이지, 개인정보처리방침, app-ads.txt | https://nongolbus.mauvemove.com | Cloudflare Pages |
-| `sites/opencall/` | 오픈콜 웹 (미구현) | https://opencall.mauvemove.com | Cloudflare Pages 예정 |
+| `sites/nongolbus/` | 논골버스 소개 페이지, 개인정보처리방침, app-ads.txt | https://nongolbus.mauvemove.com | Cloudflare Workers (정적 자산) |
+| `sites/opencall/` | 오픈콜 웹 (미구현) | https://opencall.mauvemove.com | Cloudflare Workers 예정 |
 | `admin/` | 3개 서비스 통합 백오피스 (미구현) | https://admin.mauvemove.com | Cloud Run + IAP |
 | `shared/` | 공통 스타일·컴포넌트·개인정보처리방침 공통 문단 | - | - |
 
@@ -22,12 +22,12 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 
 ## 배포
 
-정적 페이지는 Cloudflare Pages 프로젝트를 사이트별로 하나씩 만든다.
+정적 페이지는 Cloudflare Workers(정적 자산)로 배포한다. 사이트별로 Worker를 하나씩 만들고, 각 사이트 폴더의 `wrangler.jsonc`가 배포 설정이다.
 
-| 프로젝트 | 루트 디렉터리 | 빌드 명령 | 빌드 감시 경로 |
+| Worker 이름 | 루트 디렉터리 | 배포 명령 | 빌드 감시 경로 |
 |---|---|---|---|
-| nongolbus | `sites/nongolbus` | 없음 | `sites/nongolbus/*` |
-| opencall | `sites/opencall` | 없음 | `sites/opencall/*` |
+| nongolbus | `sites/nongolbus` | `npx wrangler deploy` | `sites/nongolbus/*` |
+| opencall | `sites/opencall` | `npx wrangler deploy` | `sites/opencall/*` |
 
 ## 규칙
 
