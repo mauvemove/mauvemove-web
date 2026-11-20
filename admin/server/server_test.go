@@ -233,3 +233,81 @@ func TestIAPVerify(t *testing.T) {
 		}
 	}
 }
+
+// ── 오픈콜 호출용 Google ID 토큰 ──────────────────────────────────────
+
+func unsignedJWT(exp int64) string {
+	payload, _ := json.Marshal(map[string]any{"exp": exp, "aud": "https://opencall.example"})
+	return b64([]byte(`{"alg":"RS256"}`)) + "." + b64(payload) + ".sig"
+}
+
+func TestMetadataTokenCachesUntilNearExpiry(t *testing.T) {
+	now := time.Unix(1_800_000_000, 0)
+	calls := 0
+	md := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if r.Header.Get("Metadata-Flavor") != "Google" || r.URL.Query().Get("audience") != "https://opencall.example" {
+			http.Error(w, "bad", http.StatusBadRequest)
+			return
+		}
+		_, _ = w.Write([]byte(unsignedJWT(now.Add(time.Hour).Unix()) + "\n"))
+	}))
+	defer md.Close()
+
+	m := newMetadataToken("https://opencall.example")
+	m.url, m.client, m.now = md.URL, md.Client(), func() time.Time { return now }
+
+	first, err := m.token(context.Background())
+	if err != nil || strings.Count(first, ".") != 2 {
+		t.Fatalf("token = %q, err = %v", first, err)
+	}
+	if _, err := m.token(context.Background()); err != nil || calls != 1 {
+		t.Fatalf("second call should hit cache: calls = %d, err = %v", calls, err)
+	}
+	now = now.Add(56 * time.Minute) // 만료 5분 전 안쪽
+	if _, err := m.token(context.Background()); err != nil || calls != 2 {
+		t.Fatalf("should refresh near expiry: calls = %d, err = %v", calls, err)
+	}
+}
+
+func TestMetadataTokenErrors(t *testing.T) {
+	for name, body := range map[string]string{"not a jwt": "nope", "no exp": unsignedJWT(0)} {
+		md := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(body)) }))
+		m := newMetadataToken("aud")
+		m.url, m.client = md.URL, md.Client()
+		if _, err := m.token(context.Background()); err == nil {
+			t.Errorf("%s: expected an error", name)
+		}
+		md.Close()
+	}
+}
+
+func TestOpencallStatsSendsIDTokenAndAdminEmail(t *testing.T) {
+	tok := unsignedJWT(time.Now().Add(time.Hour).Unix())
+	md := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(tok)) }))
+	defer md.Close()
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+tok || r.Header.Get(adminUserHeader) != "dev@example.com" {
+			http.Error(w, "nope", http.StatusForbidden)
+			return
+		}
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer up.Close()
+
+	cfg := config{OpencallAudience: up.URL, Services: []service{{ID: "opencall", Name: "오픈콜", APIURL: up.URL}}}
+	s := newServer(cfg, devAuth{email: "dev@example.com"})
+	m := s.opencallToken.(*metadataToken)
+	m.url, m.client = md.URL, md.Client()
+
+	rec := get(s.routes(), "/api/opencall/ads/stats?from=2026-11-01&to=2026-11-20")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"ok":true`) {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+
+	m.url = "http://127.0.0.1:1" // 메타데이터 서버 실패 → 502, 캐시 무효화 후
+	m.tok = ""
+	if rec := get(s.routes(), "/api/opencall/ads/stats?from=2026-11-01&to=2026-11-20"); rec.Code != http.StatusBadGateway {
+		t.Errorf("metadata down: status = %d, want 502", rec.Code)
+	}
+}

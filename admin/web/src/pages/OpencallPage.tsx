@@ -73,8 +73,8 @@ export default function OpencallPage({ services }: { services: ServicesState }) 
 
         {!stats.loading && notConfigured && (
           <p className="notice">
-            오픈콜 관리자 API 가 아직 연결되지 않았습니다. 백오피스 서버에 <code>OPENCALL_ADMIN_TOKEN</code> 을
-            설정하면 이 자리에 통계가 나옵니다.
+            오픈콜 관리자 API 가 아직 연결되지 않았습니다. 백오피스 서버에 <code>OPENCALL_ID_TOKEN_AUDIENCE</code>
+            (운영) 또는 <code>OPENCALL_ADMIN_TOKEN</code>(로컬)을 설정하면 이 자리에 통계가 나옵니다.
           </p>
         )}
 

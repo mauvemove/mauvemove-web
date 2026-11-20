@@ -23,14 +23,27 @@ const (
 	maxUpstreamBody = 2 << 20
 )
 
+// adminUserHeader 백엔드 관리자 API 에 실제로 요청한 관리자의 이메일을 알린다 (감사 로그·권한 확인용).
+// 이 값은 BFF 가 IAP 서명을 검증한 뒤에 붙이므로, 백엔드는 ID 토큰을 검증한 요청에서만 믿는다.
+const adminUserHeader = "X-Admin-User-Email"
+
 type server struct {
 	cfg    config
 	auth   authenticator
 	client *http.Client
+	// opencallToken 이 nil 이면 오픈콜 관리자 API 가 연결되지 않은 것이다.
+	opencallToken tokenSource
 }
 
 func newServer(cfg config, auth authenticator) *server {
-	return &server{cfg: cfg, auth: auth, client: &http.Client{Timeout: upstreamTimeout}}
+	s := &server{cfg: cfg, auth: auth, client: &http.Client{Timeout: upstreamTimeout}}
+	switch {
+	case cfg.OpencallAudience != "":
+		s.opencallToken = newMetadataToken(cfg.OpencallAudience)
+	case cfg.OpencallAdminToken != "":
+		s.opencallToken = staticToken(cfg.OpencallAdminToken)
+	}
+	return s
 }
 
 func (s *server) routes() http.Handler {
@@ -121,15 +134,21 @@ func (s *server) handleOpencallAdsStats(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "bad_request", "from, to 는 YYYY-MM-DD 형식이어야 합니다.")
 		return
 	}
-	if s.cfg.OpencallAdminToken == "" {
+	if s.opencallToken == nil {
 		writeError(w, http.StatusServiceUnavailable, "not_configured", "오픈콜 관리자 API 가 아직 연결되지 않았습니다.")
+		return
+	}
+	token, err := s.opencallToken.token(r.Context())
+	if err != nil {
+		log.Printf("opencall id token: %v", err)
+		writeError(w, http.StatusBadGateway, "upstream_auth", "오픈콜 호출용 인증 토큰을 받지 못했습니다.")
 		return
 	}
 
 	svc, _ := s.cfg.service("opencall")
 	q := url.Values{"from": {from}, "to": {to}}
 	var body json.RawMessage
-	if err := s.getJSON(r.Context(), svc.APIURL+"/api/admin/ads/stats?"+q.Encode(), s.cfg.OpencallAdminToken, &body); err != nil {
+	if err := s.getJSON(r.Context(), svc.APIURL+"/api/admin/ads/stats?"+q.Encode(), token, &body); err != nil {
 		log.Printf("opencall ads stats: %v", err)
 		writeError(w, http.StatusBadGateway, "upstream_error", "오픈콜 서버에서 광고 통계를 가져오지 못했습니다.")
 		return
@@ -177,6 +196,9 @@ func (s *server) getJSON(ctx context.Context, target, bearer string, out any) er
 	req.Header.Set("Accept", "application/json")
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
+		if email := userEmail(ctx); email != "" {
+			req.Header.Set(adminUserHeader, email)
+		}
 	}
 
 	resp, err := s.client.Do(req)

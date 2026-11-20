@@ -24,7 +24,10 @@ type config struct {
 
 	Services []service
 
-	// OpencallAdminToken 오픈콜 /api/admin/* 호출용 토큰. 없으면 해당 화면은 "연결 전"으로 나온다.
+	// OpencallAudience 가 있으면 Cloud Run 서비스 계정의 Google ID 토큰(aud=이 값)으로 오픈콜 /api/admin/* 를 부른다. 운영용.
+	OpencallAudience string
+	// OpencallAdminToken 로컬 개발용 고정 토큰 (예: gcloud auth print-identity-token --audiences=...).
+	// 둘 다 없으면 오픈콜 관리 화면은 "연결 전"으로 나온다.
 	OpencallAdminToken string
 }
 
@@ -34,6 +37,7 @@ func loadConfig() (config, error) {
 		StaticDir:          env("STATIC_DIR", "../web/dist"),
 		IAPAudience:        os.Getenv("IAP_AUDIENCE"),
 		DevUserEmail:       os.Getenv("DEV_USER_EMAIL"),
+		OpencallAudience:   os.Getenv("OPENCALL_ID_TOKEN_AUDIENCE"),
 		OpencallAdminToken: os.Getenv("OPENCALL_ADMIN_TOKEN"),
 		// 화면에 나오는 순서다. 첫 번째가 첫 화면.
 		Services: []service{
@@ -49,6 +53,9 @@ func loadConfig() (config, error) {
 	}
 	if cfg.IAPAudience != "" && cfg.DevUserEmail != "" {
 		return cfg, errors.New("IAP_AUDIENCE 와 DEV_USER_EMAIL 을 같이 설정할 수 없다")
+	}
+	if cfg.OpencallAudience != "" && cfg.OpencallAdminToken != "" {
+		return cfg, errors.New("OPENCALL_ID_TOKEN_AUDIENCE 와 OPENCALL_ADMIN_TOKEN 을 같이 설정할 수 없다")
 	}
 	return cfg, nil
 }
