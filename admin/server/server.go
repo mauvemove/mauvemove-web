@@ -52,6 +52,10 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/services", s.handleServices)
 	mux.HandleFunc("GET /api/nongolbus/notices", s.handleNongolbusNotices)
 	mux.HandleFunc("GET /api/opencall/ads/stats", s.handleOpencallAdsStats)
+	mux.HandleFunc("GET /api/opencall/tiers", s.handleOpencallPeriod("/api/admin/tiers", "등급별 통계"))
+	mux.HandleFunc("GET /api/opencall/activity", s.handleOpencallPeriod("/api/admin/activity", "이용자 통계"))
+	mux.HandleFunc("GET /api/opencall/jobs", s.handleOpencallPlain("/api/admin/jobs", "배치 상태"))
+	mux.HandleFunc("GET /api/opencall/apis", s.handleOpencallPlain("/api/admin/apis", "수집 API 상태"))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "없는 API 입니다.")
 	})
@@ -134,6 +138,44 @@ func (s *server) handleOpencallAdsStats(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "bad_request", "from, to 는 YYYY-MM-DD 형식이어야 합니다.")
 		return
 	}
+	s.proxyOpencall(w, r, "/api/admin/ads/stats", url.Values{"from": {from}, "to": {to}}, "광고 통계")
+}
+
+// handleOpencallPeriod 는 기간(from·to, 없으면 오픈콜 기본값)과 묶음 단위(unit)를 받는 오픈콜 통계 API 를 대신 부른다.
+func (s *server) handleOpencallPeriod(path, what string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		in := r.URL.Query()
+		q := url.Values{}
+		for _, k := range []string{"from", "to"} {
+			if v := in.Get(k); v != "" {
+				if !isDate(v) {
+					writeError(w, http.StatusBadRequest, "bad_request", "from, to 는 YYYY-MM-DD 형식이어야 합니다.")
+					return
+				}
+				q.Set(k, v)
+			}
+		}
+		switch unit := in.Get("unit"); unit {
+		case "":
+		case "day", "week", "month":
+			q.Set("unit", unit)
+		default:
+			writeError(w, http.StatusBadRequest, "bad_request", "unit 은 day, week, month 중 하나여야 합니다.")
+			return
+		}
+		s.proxyOpencall(w, r, path, q, what)
+	}
+}
+
+// handleOpencallPlain 은 쿼리 없는 오픈콜 관리자 GET API 를 대신 부른다.
+func (s *server) handleOpencallPlain(path, what string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.proxyOpencall(w, r, path, nil, what)
+	}
+}
+
+// proxyOpencall 은 오픈콜 관리자 API 를 백오피스 인증(ID 토큰 또는 로컬 토큰)으로 부르고 본문을 그대로 돌려준다.
+func (s *server) proxyOpencall(w http.ResponseWriter, r *http.Request, path string, q url.Values, what string) {
 	if s.opencallToken == nil {
 		writeError(w, http.StatusServiceUnavailable, "not_configured", "오픈콜 관리자 API 가 아직 연결되지 않았습니다.")
 		return
@@ -146,11 +188,14 @@ func (s *server) handleOpencallAdsStats(w http.ResponseWriter, r *http.Request) 
 	}
 
 	svc, _ := s.cfg.service("opencall")
-	q := url.Values{"from": {from}, "to": {to}}
+	target := svc.APIURL + path
+	if len(q) > 0 {
+		target += "?" + q.Encode()
+	}
 	var body json.RawMessage
-	if err := s.getJSON(r.Context(), svc.APIURL+"/api/admin/ads/stats?"+q.Encode(), token, &body); err != nil {
-		log.Printf("opencall ads stats: %v", err)
-		writeError(w, http.StatusBadGateway, "upstream_error", "오픈콜 서버에서 광고 통계를 가져오지 못했습니다.")
+	if err := s.getJSON(r.Context(), target, token, &body); err != nil {
+		log.Printf("opencall %s: %v", path, err)
+		writeError(w, http.StatusBadGateway, "upstream_error", "오픈콜 서버에서 "+what+"를 가져오지 못했습니다.")
 		return
 	}
 	writeJSON(w, http.StatusOK, body)

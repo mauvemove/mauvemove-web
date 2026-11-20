@@ -59,6 +59,16 @@ func fakeUpstream(t *testing.T) *httptest.Server {
 		}
 		_, _ = w.Write([]byte(`{"total_revenue_micros":5,"by_feature":[],"by_user":[]}`))
 	})
+	// 백오피스 통계 API: 받은 쿼리를 그대로 돌려준다.
+	for _, path := range []string{"/api/admin/tiers", "/api/admin/activity", "/api/admin/jobs", "/api/admin/apis"} {
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get("Authorization") != "Bearer secret" {
+				http.Error(w, "nope", http.StatusForbidden)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]string{"path": r.URL.Path, "query": r.URL.RawQuery})
+		})
+	}
 	srv := httptest.NewServer(mux)
 	t.Cleanup(srv.Close)
 	return srv
@@ -124,6 +134,30 @@ func TestOpencallAdsStats(t *testing.T) {
 	rec := get(testServer(t, up.URL, "secret"), target)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"total_revenue_micros":5`) {
 		t.Errorf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+}
+
+func TestOpencallBackofficeStats(t *testing.T) {
+	up := fakeUpstream(t)
+	s := testServer(t, up.URL, "secret")
+	for target, want := range map[string]string{
+		"/api/opencall/tiers?from=2026-11-01&to=2026-11-20&unit=week": `"query":"from=2026-11-01\u0026to=2026-11-20\u0026unit=week"`,
+		"/api/opencall/activity":       `"path":"/api/admin/activity","query":""`,
+		"/api/opencall/jobs":           `"path":"/api/admin/jobs"`,
+		"/api/opencall/apis?ignored=1": `"path":"/api/admin/apis","query":""`,
+	} {
+		rec := get(s, target)
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("%s: status = %d, body = %s, want %s", target, rec.Code, rec.Body, want)
+		}
+	}
+	for _, target := range []string{"/api/opencall/tiers?unit=year", "/api/opencall/activity?from=2026-13-01"} {
+		if rec := get(s, target); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, want 400", target, rec.Code)
+		}
+	}
+	if rec := get(testServer(t, up.URL, ""), "/api/opencall/jobs"); rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("without token: status = %d, want 503", rec.Code)
 	}
 }
 

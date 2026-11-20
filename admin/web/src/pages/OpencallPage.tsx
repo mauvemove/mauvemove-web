@@ -1,27 +1,18 @@
 import { type FormEvent, useState } from "react";
 import type { ServicesState } from "../App";
 import { type AdStats, useApi } from "../api";
+import ActivityCard from "../components/ActivityCard";
+import ApisCard from "../components/ApisCard";
+import JobsCard from "../components/JobsCard";
+import PeriodBar, { defaultPeriod, type Period } from "../components/PeriodBar";
 import StatusCard from "../components/StatusCard";
-
-function isoDate(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function defaultRange(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date(to);
-  from.setDate(to.getDate() - 6);
-  return { from: isoDate(from), to: isoDate(to) };
-}
-
-// 서버는 수익을 micros(1/1,000,000) 단위로 준다. 통화는 광고 SDK 가 준 값 그대로다.
-function revenue(micros: number): string {
-  return (micros / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
+import TierStatsCard from "../components/TierStatsCard";
+import { micros as revenue, recentRange } from "../format";
 
 export default function OpencallPage({ services }: { services: ServicesState }) {
-  const [draft, setDraft] = useState(defaultRange);
+  const [period, setPeriod] = useState<Period>(() => defaultPeriod());
+  const [tick, setTick] = useState(0);
+  const [draft, setDraft] = useState(() => recentRange(7));
   const [range, setRange] = useState(draft);
   const stats = useApi<AdStats>(`/api/opencall/ads/stats?from=${range.from}&to=${range.to}`);
 
@@ -38,6 +29,23 @@ export default function OpencallPage({ services }: { services: ServicesState }) 
     <>
       <h1>오픈콜</h1>
       <StatusCard id="opencall" services={services} />
+      <section className="card period">
+        <header className="card-head">
+          <h2>조회 기간</h2>
+          <PeriodBar
+            value={period}
+            onChange={(p) => {
+              setPeriod(p);
+              setTick((t) => t + 1);
+            }}
+          />
+        </header>
+        <p className="muted small">아래 등급별 현황과 이용자 카드에 함께 적용됩니다.</p>
+      </section>
+      <TierStatsCard key={`tiers-${tick}`} period={period} />
+      <ActivityCard key={`activity-${tick}`} period={period} />
+      <JobsCard />
+      <ApisCard />
 
       <section className="card">
         <header className="card-head">
