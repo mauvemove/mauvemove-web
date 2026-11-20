@@ -29,6 +29,16 @@ MauveMove 서비스들의 웹페이지와 통합 백오피스를 담는 모노�
 | nongolbus | `sites/nongolbus` | `npx wrangler deploy` | `sites/nongolbus/*` |
 | opencall | `sites/opencall` | `npx wrangler deploy` | `sites/opencall/*` |
 
+`main`에 병합하면 바로 운영에 배포된다. 예약 공개는 없으므로, 아직 공개하면 안 되는 내용은 `main`에 병합하지 않는다.
+
+### 미리보기 빌드
+
+`main`이 아닌 브랜치를 푸시하면 Cloudflare가 미리보기 빌드를 돌리고, 그 결과가 PR 체크(`Workers Builds: nongolbus`)로 표시된다.
+
+- 미리보기 빌드는 대시보드의 루트 디렉터리 설정과 상관없이 repo 루트에서 `npx wrangler preview`로 실행된다. 그래서 루트에 `wrangler.jsonc`를 따로 둔다. 이 파일을 지우면 PR 체크가 실패한다.
+- 운영 배포는 `sites/nongolbus/wrangler.jsonc`를 쓴다. 두 파일 모두 `previews` 블록이 있어야 한다.
+- 루트 `wrangler.jsonc`는 Worker 하나(`nongolbus`)만 가리킬 수 있다. opencall Worker를 추가할 때는 미리보기 빌드를 어떻게 나눌지 다시 정해야 한다.
+
 ## 규칙
 
 - 개인정보처리방침은 서비스별로 따로 둔다 (`<서비스 도메인>/privacy.html`).
