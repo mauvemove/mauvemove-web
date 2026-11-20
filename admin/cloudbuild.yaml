@@ -1,0 +1,40 @@
+# Cloud Build 트리거용. 트리거에 포함 경로 필터 admin/** 를 걸고, 설정 파일로 admin/cloudbuild.yaml 을 지정한다.
+# 아래 substitution 값은 트리거에서 덮어쓴다.
+substitutions:
+  _REGION: asia-northeast3
+  _REPOSITORY: mauvemove
+  _SERVICE: mauvemove-admin
+  _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_SERVICE}
+
+steps:
+  - id: test
+    name: golang:1.24
+    dir: admin/server
+    entrypoint: bash
+    args: ["-c", "go vet ./... && go test ./..."]
+
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_IMAGE}:${SHORT_SHA}", "-t", "${_IMAGE}:latest", "admin"]
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_IMAGE}"]
+
+  # 환경 변수(IAP_AUDIENCE 등)와 IAP 설정은 서비스에 한 번 걸어 두고, 배포는 이미지만 바꾼다.
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_IMAGE}:${SHORT_SHA}
+      - --region=${_REGION}
+
+images:
+  - ${_IMAGE}:${SHORT_SHA}
+  - ${_IMAGE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
