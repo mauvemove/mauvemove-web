@@ -42,7 +42,8 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "없는 API 입니다.")
 	})
-	mux.HandleFunc("GET /", s.handleStatic)
+	// "/api/" 가 메서드 없이 등록돼 있어 여기도 메서드를 붙이지 않는다 ("GET /" 와는 충돌한다).
+	mux.HandleFunc("/", s.handleStatic)
 	return requireUser(s.auth, mux)
 }
 
@@ -138,6 +139,11 @@ func (s *server) handleOpencallAdsStats(w http.ResponseWriter, r *http.Request) 
 
 // handleStatic 빌드된 화면을 내려준다. 파일이 없는 경로는 index.html 로 보내 화면 쪽 라우터가 처리하게 한다.
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "허용되지 않은 메서드입니다.")
+		return
+	}
 	clean := path.Clean("/" + r.URL.Path)
 	file := filepath.Join(s.cfg.StaticDir, filepath.FromSlash(clean))
 	if info, err := os.Stat(file); err == nil && !info.IsDir() {

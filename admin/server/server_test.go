@@ -130,7 +130,7 @@ func TestOpencallAdsStats(t *testing.T) {
 func TestStaticFallsBackToIndex(t *testing.T) {
 	up := fakeUpstream(t)
 	h := testServer(t, up.URL, "")
-	for _, target := range []string{"/", "/opencall", "/nongolbus/notices", "/../../etc/passwd"} {
+	for _, target := range []string{"/", "/opencall", "/nongolbus/notices"} {
 		rec := get(h, target)
 		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "admin") {
 			t.Errorf("%s: status = %d, body = %q", target, rec.Code, rec.Body)
@@ -138,6 +138,16 @@ func TestStaticFallsBackToIndex(t *testing.T) {
 	}
 	if rec := get(h, "/api/unknown"); rec.Code != http.StatusNotFound {
 		t.Errorf("/api/unknown: status = %d, want 404", rec.Code)
+	}
+	// ServeMux 는 ".." 가 든 경로를 정리된 주소로 리다이렉트한다. 정적 디렉터리 밖으로 나가지 않는다.
+	if rec := get(h, "/../../etc/passwd"); rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != "/etc/passwd" {
+		t.Errorf("traversal: status = %d, location = %q", rec.Code, rec.Header().Get("Location"))
+	}
+	req := httptest.NewRequest(http.MethodPost, "/opencall", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST /opencall: status = %d, want 405", rec.Code)
 	}
 }
 

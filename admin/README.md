@@ -2,9 +2,6 @@
 
 오픈콜·논골버스·로또스매시를 한 화면에서 보는 백오피스. 주소는 `https://admin.mauvemove.com` (Cloud Run + IAP, 아직 배포 전).
 
-> 이 뼈대는 Go·Node 가 없는 PC 에서 작성해 **아직 빌드와 테스트를 한 번도 돌리지 않았다.**
-> 개발 PC 에서 아래 "처음 확인" 을 먼저 돌린다.
-
 ## 구조
 
 | 경로 | 내용 |
@@ -22,14 +19,12 @@
 | 논골버스 | 서버 상태, 지금 앱에 나가는 공지 | 읽기 전용. 공지는 논골버스 서버 설정 파일에서 관리한다 (DB 없음) |
 | 로또스매시 | 서버 상태 | |
 
-## 처음 확인
+## 빌드·테스트
 
 ```bash
 cd admin/server && go vet ./... && go test ./...
-cd ../web && npm install && npm run build
+cd ../web && npm ci && npm run build
 ```
-
-`package-lock.json` 이 아직 없다. `npm install` 로 생긴 파일을 커밋한다.
 
 ## 로컬 실행
 
