@@ -66,6 +66,8 @@ docker run -e DEV_USER_EMAIL=me@example.com -p 8080:8080 admin
 운영 배포는 Cloud Build 트리거로 한다. 트리거에 포함 경로 필터 `admin/**`, 설정 파일 `admin/cloudbuild.yaml` 을 지정한다.
 `cloudbuild.yaml` 은 테스트 → 이미지 빌드·푸시(Artifact Registry) → `gcloud run deploy` 순서이고, 리전·저장소·서비스 이름은 substitution(`_REGION`, `_REPOSITORY`, `_SERVICE`)으로 트리거에서 바꾼다.
 
+Cloud Build 가 배포까지 하려면 빌드에 쓰는 서비스 계정(지정하지 않으면 기본 compute 서비스 계정 `<프로젝트 번호>-compute@developer.gserviceaccount.com`)에 Cloud Run 관리자(`roles/run.admin`)와, 실행 서비스 계정 `mauvemove-admin@…` 에 대한 서비스 계정 사용자(`roles/iam.serviceAccountUser`) 권한이 있어야 한다. 이 권한이 없으면 테스트·빌드·push 는 되고 마지막 deploy 단계만 실패한다 (그때는 push 된 이미지로 `gcloud run deploy` 를 손으로 해도 된다).
+
 처음 한 번은 손으로 한다.
 
 1. Artifact Registry 저장소 만들기
