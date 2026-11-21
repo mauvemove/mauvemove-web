@@ -38,3 +38,7 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  # _IMAGE 안에서 다른 substitution(_REGION·_REPOSITORY·_SERVICE)을 쓰므로 둘 다 필요하다.
+  # 없으면 Cloud Build 가 "not matched" 로 빌드를 거부한다.
+  dynamicSubstitutions: true
+  substitutionOption: ALLOW_LOOSE
