@@ -60,7 +60,7 @@ func fakeUpstream(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"total_revenue_micros":5,"by_feature":[],"by_user":[]}`))
 	})
 	// 백오피스 통계 API: 받은 쿼리를 그대로 돌려준다.
-	for _, path := range []string{"/api/admin/tiers", "/api/admin/activity", "/api/admin/jobs", "/api/admin/apis"} {
+	for _, path := range []string{"/api/admin/tiers", "/api/admin/activity", "/api/admin/jobs", "/api/admin/apis", "/api/admin/usage"} {
 		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("Authorization") != "Bearer secret" {
 				http.Error(w, "nope", http.StatusForbidden)
@@ -142,9 +142,10 @@ func TestOpencallBackofficeStats(t *testing.T) {
 	s := testServer(t, up.URL, "secret")
 	for target, want := range map[string]string{
 		"/api/opencall/tiers?from=2026-11-01&to=2026-11-20&unit=week": `"query":"from=2026-11-01\u0026to=2026-11-20\u0026unit=week"`,
-		"/api/opencall/activity":       `"path":"/api/admin/activity","query":""`,
-		"/api/opencall/jobs":           `"path":"/api/admin/jobs"`,
-		"/api/opencall/apis?ignored=1": `"path":"/api/admin/apis","query":""`,
+		"/api/opencall/activity":         `"path":"/api/admin/activity","query":""`,
+		"/api/opencall/usage?unit=month": `"path":"/api/admin/usage","query":"unit=month"`,
+		"/api/opencall/jobs":             `"path":"/api/admin/jobs"`,
+		"/api/opencall/apis?ignored=1":   `"path":"/api/admin/apis","query":""`,
 	} {
 		rec := get(s, target)
 		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), want) {

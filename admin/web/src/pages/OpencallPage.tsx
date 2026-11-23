@@ -7,6 +7,7 @@ import JobsCard from "../components/JobsCard";
 import PeriodBar, { defaultPeriod, type Period } from "../components/PeriodBar";
 import StatusCard from "../components/StatusCard";
 import TierStatsCard from "../components/TierStatsCard";
+import UsageCard from "../components/UsageCard";
 import { micros as revenue, recentRange } from "../format";
 
 export default function OpencallPage({ services }: { services: ServicesState }) {
@@ -40,10 +41,11 @@ export default function OpencallPage({ services }: { services: ServicesState }) 
             }}
           />
         </header>
-        <p className="muted small">아래 등급별 현황과 이용자 카드에 함께 적용됩니다.</p>
+        <p className="muted small">아래 등급별 현황·이용자·앱 사용 카드에 함께 적용됩니다.</p>
       </section>
       <TierStatsCard key={`tiers-${tick}`} period={period} />
       <ActivityCard key={`activity-${tick}`} period={period} />
+      <UsageCard key={`usage-${tick}`} period={period} />
       <JobsCard />
       <ApisCard />
 

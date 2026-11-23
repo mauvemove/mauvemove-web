@@ -54,6 +54,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/opencall/ads/stats", s.handleOpencallAdsStats)
 	mux.HandleFunc("GET /api/opencall/tiers", s.handleOpencallPeriod("/api/admin/tiers", "등급별 통계"))
 	mux.HandleFunc("GET /api/opencall/activity", s.handleOpencallPeriod("/api/admin/activity", "이용자 통계"))
+	mux.HandleFunc("GET /api/opencall/usage", s.handleOpencallPeriod("/api/admin/usage", "앱 사용 통계"))
 	mux.HandleFunc("GET /api/opencall/jobs", s.handleOpencallPlain("/api/admin/jobs", "배치 상태"))
 	mux.HandleFunc("GET /api/opencall/apis", s.handleOpencallPlain("/api/admin/apis", "수집 API 상태"))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
