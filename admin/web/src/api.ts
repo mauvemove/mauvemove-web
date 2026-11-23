@@ -205,3 +205,71 @@ export interface ApisStatus {
   /** 실패 → 기록 없음 → 성공 순 */
   apis: ApiStatus[];
 }
+
+/** 앱 사용 통계의 등급. 무료 명단은 토큰상 정기라 regular 에 들어간다. */
+export type UsageTier = "guest" | "regular" | "premium";
+
+export interface SavedTierUsage {
+  /** 기간 안에 앱을 쓴 사람 */
+  active_users: number;
+  /** 보관함에 새로 담은 사람 */
+  saver_users: number;
+  /** 진행 상태를 바꾼 사람 */
+  status_users: number;
+  adds: number;
+  status_changes: number;
+}
+
+export interface UsageCount {
+  key: string;
+  count: number;
+  users: number;
+}
+
+export type ConversionReason = "delay" | "region" | "saved_limit" | "locked_info" | "other" | "none";
+
+export interface ConversionReasonRow {
+  reason: ConversionReason;
+  /** 구독 직전(30일 안) 마지막으로 걸린 이유가 이것인 전환 수. 합이 전환 수와 같다. */
+  last_touch: number;
+  /** 구독 전 30일 안에 한 번이라도 이것에 걸린 전환 수 */
+  any_touch: number;
+  /** 기간 안에 이것에 걸린 무료 이용자 */
+  guests: number;
+  /** 그중 처음 걸린 뒤 30일 안에 구독한 사람 */
+  converted: number;
+}
+
+/** 오픈콜 GET /api/admin/usage. 계산 방식은 opencall-server docs/USAGE_STATS.md */
+export interface UsageStats {
+  unit: "day" | "week" | "month";
+  from: string;
+  to: string;
+  /** 가장 최근 사용 기록 시각. 아직 없으면 null. */
+  updated_at: string | null;
+  saved: {
+    all: SavedTierUsage;
+    by_tier: Record<UsageTier, SavedTierUsage>;
+    /** 바꾼 뒤 상태별 횟수 (todo·contacted·dealing·hold) */
+    status_to: Record<string, number>;
+  };
+  map: {
+    store_views: number;
+    view_users: number;
+    map_opens: number;
+    map_users: number;
+    by_source: UsageCount[];
+    by_app: UsageCount[];
+    views_source: UsageCount[];
+    series: { period: string; store_views: number; map_opens: number }[];
+  };
+  conversion: {
+    guest_users: number;
+    converted: number;
+    trial: number;
+    /** 가입부터 구독 시작까지 날 수의 중앙값. 전환이 없으면 null. */
+    median_days: number | null;
+    days: { label: string; count: number }[];
+    reasons: ConversionReasonRow[];
+  };
+}
