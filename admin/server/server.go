@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -55,6 +56,7 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/opencall/tiers", s.handleOpencallPeriod("/api/admin/tiers", "등급별 통계"))
 	mux.HandleFunc("GET /api/opencall/activity", s.handleOpencallPeriod("/api/admin/activity", "이용자 통계"))
 	mux.HandleFunc("GET /api/opencall/usage", s.handleOpencallPeriod("/api/admin/usage", "앱 사용 통계"))
+	mux.HandleFunc("GET /api/opencall/density", s.handleOpencallDensity)
 	mux.HandleFunc("GET /api/opencall/jobs", s.handleOpencallPlain("/api/admin/jobs", "배치 상태"))
 	mux.HandleFunc("GET /api/opencall/apis", s.handleOpencallPlain("/api/admin/apis", "수집 API 상태"))
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
@@ -166,6 +168,24 @@ func (s *server) handleOpencallPeriod(path, what string) http.HandlerFunc {
 		}
 		s.proxyOpencall(w, r, path, q, what)
 	}
+}
+
+// handleOpencallDensity 는 오픈콜 지역 밀도 통계를 대신 부른다. days(해지를 세는 기간)·crowded_min(몰림 기준)은 숫자만 넘긴다.
+func (s *server) handleOpencallDensity(w http.ResponseWriter, r *http.Request) {
+	in := r.URL.Query()
+	q := url.Values{}
+	for _, k := range []string{"days", "crowded_min"} {
+		v := in.Get(k)
+		if v == "" {
+			continue
+		}
+		if n, err := strconv.Atoi(v); err != nil || n < 1 || n > 1000 {
+			writeError(w, http.StatusBadRequest, "bad_request", "days, crowded_min 은 1 이상의 숫자여야 합니다.")
+			return
+		}
+		q.Set(k, v)
+	}
+	s.proxyOpencall(w, r, "/api/admin/density", q, "지역 밀도 통계")
 }
 
 // handleOpencallPlain 은 쿼리 없는 오픈콜 관리자 GET API 를 대신 부른다.

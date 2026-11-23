@@ -3,6 +3,7 @@ import type { ServicesState } from "../App";
 import { type AdStats, useApi } from "../api";
 import ActivityCard from "../components/ActivityCard";
 import ApisCard from "../components/ApisCard";
+import DensityCard from "../components/DensityCard";
 import JobsCard from "../components/JobsCard";
 import PeriodBar, { defaultPeriod, type Period } from "../components/PeriodBar";
 import StatusCard from "../components/StatusCard";
@@ -46,6 +47,7 @@ export default function OpencallPage({ services }: { services: ServicesState }) 
       <TierStatsCard key={`tiers-${tick}`} period={period} />
       <ActivityCard key={`activity-${tick}`} period={period} />
       <UsageCard key={`usage-${tick}`} period={period} />
+      <DensityCard />
       <JobsCard />
       <ApisCard />
 

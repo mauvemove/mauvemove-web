@@ -273,3 +273,62 @@ export interface UsageStats {
     reasons: ConversionReasonRow[];
   };
 }
+
+export interface DensityCell {
+  /** 사업장 형태 코드 (food_supply 등). "" 는 안 적음 */
+  type: string;
+  name: string;
+  regular: number;
+  free: number;
+  premium: number;
+  churned: number;
+}
+
+export interface DensityRegion {
+  /** "인천광역시 미추홀구" */
+  region: string;
+  /** 스토어 결제 정기 */
+  regular: number;
+  /** 무료 명단 */
+  free: number;
+  /** 이 구를 고른 프리미엄 (전국 프리미엄은 summary.nationwide_premium) */
+  premium: number;
+  /** 기간 안에 이 구에서 정기가 끝난 사람 (다른 구로 옮겨 계속 결제하는 사람 제외) */
+  churned: number;
+  /** churned ÷ (regular + churned). 둘 다 0 이면 null */
+  churn_rate: number | null;
+  /** 사업장 형태를 적은 사람 중 같은 형태가 가장 많이 겹친 수 */
+  max_same_type: number;
+  crowded: boolean;
+  by_type: DensityCell[];
+}
+
+export interface CrowdCompare {
+  regions: number;
+  regular: number;
+  churned: number;
+  churn_rate: number | null;
+}
+
+/** 오픈콜 GET /api/admin/density. 계산 방식은 opencall-server docs/BACKOFFICE_STATS.md "지역 밀도" */
+export interface DensityStats {
+  /** 기준일. 아직 기록이 없으면 "" */
+  as_of: string;
+  updated_at: string | null;
+  churn_days: number;
+  crowded_min: number;
+  /** 사람 수는 한 사람을 한 번만 센다 (구를 3개 골라도 1) */
+  summary: {
+    regular_users: number;
+    no_type_users: number;
+    nationwide_premium: number;
+    churned_users: number;
+    regions: number;
+    crowded_regions: number;
+  };
+  crowded: CrowdCompare;
+  not_crowded: CrowdCompare;
+  business_types: { code: string; name: string }[];
+  /** 사람 많은 순 */
+  regions: DensityRegion[];
+}

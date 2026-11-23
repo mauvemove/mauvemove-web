@@ -60,7 +60,7 @@ func fakeUpstream(t *testing.T) *httptest.Server {
 		_, _ = w.Write([]byte(`{"total_revenue_micros":5,"by_feature":[],"by_user":[]}`))
 	})
 	// 백오피스 통계 API: 받은 쿼리를 그대로 돌려준다.
-	for _, path := range []string{"/api/admin/tiers", "/api/admin/activity", "/api/admin/jobs", "/api/admin/apis", "/api/admin/usage"} {
+	for _, path := range []string{"/api/admin/tiers", "/api/admin/activity", "/api/admin/jobs", "/api/admin/apis", "/api/admin/usage", "/api/admin/density"} {
 		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("Authorization") != "Bearer secret" {
 				http.Error(w, "nope", http.StatusForbidden)
@@ -145,6 +145,7 @@ func TestOpencallBackofficeStats(t *testing.T) {
 		"/api/opencall/activity":         `"path":"/api/admin/activity","query":""`,
 		"/api/opencall/usage?unit=month": `"path":"/api/admin/usage","query":"unit=month"`,
 		"/api/opencall/jobs":             `"path":"/api/admin/jobs"`,
+		"/api/opencall/density?days=90":  `"path":"/api/admin/density","query":"days=90"`,
 		"/api/opencall/apis?ignored=1":   `"path":"/api/admin/apis","query":""`,
 	} {
 		rec := get(s, target)
@@ -152,7 +153,7 @@ func TestOpencallBackofficeStats(t *testing.T) {
 			t.Errorf("%s: status = %d, body = %s, want %s", target, rec.Code, rec.Body, want)
 		}
 	}
-	for _, target := range []string{"/api/opencall/tiers?unit=year", "/api/opencall/activity?from=2026-13-01"} {
+	for _, target := range []string{"/api/opencall/tiers?unit=year", "/api/opencall/activity?from=2026-13-01", "/api/opencall/density?days=abc"} {
 		if rec := get(s, target); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s: status = %d, want 400", target, rec.Code)
 		}
