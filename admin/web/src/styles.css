@@ -726,3 +726,33 @@ button.primary {
   color: var(--surface);
   font-weight: 600;
 }
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (max-width: 720px) {
+  /* 서비스마다 한 줄: 서비스 이름 옆에 그 하위 메뉴가 붙는다. */
+  .sidebar nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .nav-group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .nav.sub-nav {
+    padding: 5px 10px;
+  }
+
+  .nav.sub-nav::before {
+    content: "›";
+    margin-right: -4px;
+    color: var(--muted);
+  }
+}

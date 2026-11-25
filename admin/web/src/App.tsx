@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { type Loadable, type ServiceId, type ServiceStatus, useApi } from "./api";
 import LottosmashPage from "./pages/LottosmashPage";
@@ -45,7 +44,7 @@ export default function App() {
             const dot = status === null ? "unknown" : status.ok ? "ok" : "down";
             const label = status === null ? "확인 중" : status.ok ? "정상" : "응답 없음";
             return (
-              <Fragment key={s.id}>
+              <div key={s.id} className="nav-group">
                 <NavLink to={`/${s.id}`} end className={({ isActive }) => (isActive ? "nav active" : "nav")}>
                   <span className={`dot ${dot}`} role="img" aria-label={label} />
                   {s.name}
@@ -59,7 +58,7 @@ export default function App() {
                     {sub.name}
                   </NavLink>
                 ))}
-              </Fragment>
+              </div>
             );
           })}
         </nav>
