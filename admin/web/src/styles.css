@@ -595,3 +595,134 @@ th {
 button.more {
   margin-top: 8px;
 }
+
+/* ── 문의·추천 코드 ── */
+.nav.sub-nav {
+  padding: 5px 8px 5px 26px;
+  font-size: 14px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+select,
+textarea,
+input[type="text"] {
+  padding: 5px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text);
+}
+
+.badge.good {
+  color: var(--good);
+}
+
+button.link {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  color: var(--accent);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.row-on td {
+  background: var(--accent-soft);
+}
+
+.contacts {
+  min-width: 680px;
+}
+
+.contacts td:not(.preview),
+.contacts th {
+  white-space: nowrap;
+}
+
+.contacts .preview {
+  width: 100%;
+  max-width: 0;
+}
+
+.contacts .preview button {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.bubble {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble.answer {
+  background: var(--accent-soft);
+}
+
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.reply label {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.reply textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.reply-actions span {
+  margin-right: auto;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--surface);
+  font-weight: 600;
+}

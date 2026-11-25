@@ -42,9 +42,22 @@ export class ApiError extends Error {
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
+  return request<T>(path, { signal, headers: { Accept: "application/json" } });
+}
+
+/** 바꾸는 요청 (POST·PATCH). 본문은 JSON 으로 보낸다. */
+export async function apiSend<T>(method: "POST" | "PATCH", path: string, body: unknown): Promise<T> {
+  return request<T>(path, {
+    method,
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+async function request<T>(path: string, init: RequestInit): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(path, { signal, headers: { Accept: "application/json" } });
+    res = await fetch(path, init);
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
     throw new ApiError(0, "network", "백오피스 서버에 연결하지 못했습니다.");
@@ -272,4 +285,81 @@ export interface UsageStats {
     days: { label: string; count: number }[];
     reasons: ConversionReasonRow[];
   };
+}
+
+export type ContactStatus = "open" | "answered" | "closed";
+
+export const CONTACT_STATUSES: ContactStatus[] = ["open", "answered", "closed"];
+
+export const CONTACT_STATUS_NAMES: Record<ContactStatus, string> = {
+  open: "답변 전",
+  answered: "답변함",
+  closed: "닫음",
+};
+
+/** 오픈콜 문의 분류 (opencall-server internal/contact). 모르는 분류는 서버가 준 category_name 을 쓴다. */
+export const CONTACT_CATEGORIES: { id: string; name: string }[] = [
+  { id: "bug", name: "버그" },
+  { id: "suggestion", name: "제안" },
+  { id: "question", name: "문의" },
+  { id: "payment", name: "결제" },
+  { id: "account", name: "계정" },
+  { id: "data", name: "데이터 오류" },
+  { id: "premium", name: "프리미엄 상담" },
+  { id: "other", name: "기타" },
+];
+
+/** 오픈콜 문의 한 건. 계산·흐름은 opencall-server docs/CONTACT.md */
+export interface Contact {
+  id: number;
+  category: string;
+  category_name?: string;
+  message: string;
+  status: ContactStatus;
+  created_at: string;
+  answer?: string;
+  answered_at?: string;
+  answered_by?: string;
+  /** 탈퇴했거나 로그인 없이 남긴 문의는 없다. */
+  user_id?: number;
+  nickname?: string;
+  user_email?: string;
+  /** 사용자가 답장 받을 주소로 적은 메일. 있으면 답변이 메일로도 간다. */
+  reply_email?: string;
+  app_version?: string;
+  platform?: string;
+  os_version?: string;
+  device_model?: string;
+  /** 문의를 보낼 때 앱이 붙인 화면 상황 */
+  context?: string;
+  /** 사용자가 앱에서 답변을 본 시각 */
+  user_read_at?: string;
+}
+
+export interface ContactList {
+  items: Contact[] | null;
+  /** 지금 조건에 맞는 전체 수 */
+  total: number;
+  /** 상태별 전체 수 (조건과 무관) */
+  counts: Partial<Record<ContactStatus, number>> | null;
+}
+
+export interface ContactReplyResult {
+  item: Contact;
+  /** 앱 푸시가 한 기기라도 갔는지 */
+  push_sent: boolean;
+  /** 사용자가 적은 답장 메일로 보냈는지 */
+  mail_sent: boolean;
+}
+
+/** 오픈콜 GET /api/admin/referrals. 규칙은 opencall-server docs/REFERRAL.md */
+export interface ReferralReport {
+  /** 가입 수 많은 순 */
+  codes: { code: string; count: number; paying: number; last_at: string }[] | null;
+  /** 최근 넣은 순. code 로 조회하면 그 코드만 */
+  recent:
+    | { user_id: number | null; nickname?: string; code: string; entered_at: string; signup_at?: string }[]
+    | null;
+  /** 코드를 넣은 사람 수 (탈퇴 포함) */
+  total: number;
 }
