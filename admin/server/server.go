@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -57,6 +55,11 @@ func (s *server) routes() http.Handler {
 	mux.HandleFunc("GET /api/opencall/usage", s.handleOpencallPeriod("/api/admin/usage", "앱 사용 통계"))
 	mux.HandleFunc("GET /api/opencall/jobs", s.handleOpencallPlain("/api/admin/jobs", "배치 상태"))
 	mux.HandleFunc("GET /api/opencall/apis", s.handleOpencallPlain("/api/admin/apis", "수집 API 상태"))
+	mux.HandleFunc("GET /api/opencall/contacts", s.handleOpencallContacts)
+	mux.HandleFunc("GET /api/opencall/contacts/{id}", s.handleOpencallContact)
+	mux.HandleFunc("POST /api/opencall/contacts/{id}/reply", s.handleOpencallContactReply)
+	mux.HandleFunc("PATCH /api/opencall/contacts/{id}", s.handleOpencallContactStatus)
+	mux.HandleFunc("GET /api/opencall/referrals", s.handleOpencallReferrals)
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, http.StatusNotFound, "not_found", "없는 API 입니다.")
 	})
@@ -231,39 +234,7 @@ func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
 
 // getJSON 백엔드를 GET 으로 부르고 JSON 응답을 out 에 담는다.
 func (s *server) getJSON(ctx context.Context, target, bearer string, out any) error {
-	ctx, cancel := context.WithTimeout(ctx, upstreamTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "application/json")
-	if bearer != "" {
-		req.Header.Set("Authorization", "Bearer "+bearer)
-		if email := userEmail(ctx); email != "" {
-			req.Header.Set(adminUserHeader, email)
-		}
-	}
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return fmt.Errorf("연결 실패: %w", err)
-	}
-	defer resp.Body.Close()
-
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxUpstreamBody))
-	if err != nil {
-		return fmt.Errorf("응답 읽기 실패: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %d", resp.StatusCode)
-	}
-	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("JSON 이 아닌 응답: %w", err)
-	}
-	return nil
+	return s.sendJSON(ctx, http.MethodGet, target, bearer, nil, out)
 }
 
 func isDate(v string) bool {
